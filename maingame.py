@@ -4,9 +4,11 @@
 import os
 import time
 import random
+import datetime
 
 def menu():
     ##Text Display Section
+    os.system('clear')
     print("#"*18," Type Test ","#"*19)
     print("#\t","Enter 0 for Game\t\t\t\t\t\t\t","#")
     print("#\t","Enter 1 for Instructions\t\t\t\t\t", "#")
@@ -17,35 +19,46 @@ def menu():
     user_selection = (input("")).lower()
 
     if user_selection == '0':
-        length  =   lengthSelect()
-        wordbank    =   wordbank_select()
+        length = lengthSelect()
+        wordbank = wordbank_select()
         text = generate_text(length, wordbank)
         #[elapsed_time, words_typed, accuracy * 100, wpm]
         dataReturn = main_game(text)
+
+        # return [elapsed_time, words_typed, accuracy * 100, wpm];
+        # //accuracy wpm difficulty
+        wordbank_name =["Easy","Medium","Hard"]
+        enter_score(dataReturn[2],dataReturn[3],wordbank_name[wordbank-1])
+
 
 
     elif user_selection == '1':
         instructions()
     elif user_selection == '2':
-        leaderboard()
+        view_leaderboards()
     elif user_selection == 'q':
         quitScreen()
     else:
         menu()
 
 def lengthSelect():
-    print("#"*10,"Length Selection:","#"*10)
-    length = input("Select length of text (5, 10, 20, or 50): ")
-    if length in ["5", "10", "20", "50"]:
+    print("#"*17,"Length Selection:","#"*18)
+    length = input("Select length of text (5, 10 or 20): ")
+    print("#" * 50 + "\n")
+    if length in ["5", "10", "20"]:
         return int(length)
     else:
         print("Invalid input, please try again.")
+        lengthSelect()
+
 
 
 
 
 def wordbank_select():
+    print("#"*50+"\n")
     difficulty = input("Select difficulty level (easy, medium, hard): ")
+    print("#" * 50 + "\n")
     if difficulty == "easy":
         return 1
     elif difficulty == "medium":
@@ -54,18 +67,20 @@ def wordbank_select():
         return 3
     else:
         print("Invalid input, please try again.")
+        wordbank_select()
+    print("#"*50+"\n")
 
 
 def instructions():
     os.system("clear")
-    print("#"*14,"Instructions","#"*14)
+    print("#"*19,"Instructions","#"*19)
     print("Type the generated text as fast and accurately as you can.")
     print("Your score will be based on your accuracy and words per minute (WPM).")
     print("#"*50)
-
-def leaderboard():
-    print("#"*15,"Leaderboard","#"*14)
-    print("#"*50)
+    print("Enter \'m\' to return to menu: ")
+    if input() == "m":
+        os.system('clear')
+        menu()
 
 def quitScreen():
     os.system("clear")
@@ -81,15 +96,26 @@ def quitScreen():
         menu()
 
 def generate_text(length, difficulty):
-    word_bank = {
-        1: ["apple", "banana", "pear", "orange", "grape"],
-        2: ["cat", "dog", "bird", "fish", "rabbit"],
-        3: ["computer", "algorithm", "programming", "database", "network"]
-    }
+
+
+    if difficulty == 1:
+        filename = "easy.txt"
+    elif difficulty == 2:
+        filename = "medium.txt"
+    elif difficulty == 3:
+        filename = "hard.txt"
+    else:
+        exit()
+
+    with open(filename) as f:
+        for line in f:
+            word_bank = line.split()
+
+    print(word_bank)
     words = []
     for i in range(length):
-        words.append(random.choice(word_bank[difficulty]))
-    text = " ".join(words) + "."
+        words.append(random.choice(word_bank))
+    text = " ".join(words)
     print("Generated text:")
     print(text)
     return text
@@ -126,14 +152,13 @@ def main_game(text):
             try:
                 if textSplitted[i][j] == UserSplitted[i][j]:
                     point += 1
-                    print("Add Point", i, j)
+                    # print("Add Point", i, j)
                 else:
                     continue
             except IndexError:
                 continue
 
         pointsum += point
-
     if len(user_text)>2:
         accuracy = (pointsum-1)/len(text)
     else:
@@ -142,20 +167,40 @@ def main_game(text):
 
     wpm = words_typed / elapsed_time * 60
 
-
+    date = datetime.datetime.now()
     print("Time elapsed: {:.2f} seconds".format(elapsed_time))
     print("Words typed: {}".format(words_typed))
     print("Accuracy: {:.2f}%".format(accuracy * 100))
     print("Words per minute: {:.2f}".format(wpm))
-
+    input("Press Enter to Continue")
     return [elapsed_time, words_typed, accuracy*100, wpm];
+
+def enter_score(accuracy, wpm, difficulty):
+    os.system("clear")
+    print("Your Speed is: ", wpm, "WPM")
+    print("Your Accuracy is: ", accuracy)
+    date = datetime.datetime.now()
+    fmatWPM = ""
+    fmatAccuracy = ""
+    if (len(str(wpm)) < 3):
+        fmatWPM = "0" * (4 - len(str(wpm))) + str(wpm)
+    else:
+        fmatWPM = str(wpm)
+
+    fmatAccuracy = str(accuracy)
+
+    name = input("Enter your name: ")
+    with open("score.txt", 'a') as myFile:
+        myFile.write(name+" "+fmatWPM + "\t" + fmatAccuracy +name + "\t" + str(date) + "\n")
 
 
 def view_leaderboards():
-    with open("leaderboard.txt", "r") as f:
+    print("#" * 15, "Leaderboard", "#" * 14)
+
+    with open("score.txt", "r") as f:
         rankings = []
         for line in f:
-            name, wpm, accuracy = line.strip().split(",")
+            name, wpm, accuracy , recorded_date = line.strip().split(",")
             wpm = float(wpm)
             accuracy = float(accuracy)
             if accuracy >= 0.85:
@@ -164,7 +209,10 @@ def view_leaderboards():
         print("Leaderboards:")
         for i, (name, wpm, accuracy) in enumerate(rankings):
             print("{}. {}: {:.2f} WPM, {:.2f}% accuracy".format(i+1, name, wpm, accuracy))
+    print("#" * 50)
 
 
 #main_game("the quick brown fox jumped over the lazy dog")
-menu()
+
+while True:
+    menu()
